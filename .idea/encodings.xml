@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/build.sbt" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/scala/com/kunyan/Scheduler.scala" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/scala/com/kunyan/conf/Platform.scala" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/scala/com/kunyan/util/HbaseUtil.scala" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/scala/com/kunyan/util/LazyConnections.scala" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/scala/com/kunyan/util/MysqlUtil.scala" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/scala/com/kunyan/util/Test.scala" charset="UTF-8" />
+  </component>
+</project>
