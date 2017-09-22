@@ -19,7 +19,7 @@ object HbaseUtil {
    * @param lazyConn  连接容器
    * @return (url, html)
    */
-  def query(tableName: String, rowkey: String, lazyConn: LazyConnections): (String, String,String) = {
+  def query(tableName: String, rowkey: String, lazyConn: LazyConnections): (String, String,String,String) = {
 
     val table = lazyConn.getTable(tableName)
     val get = new Get(rowkey.getBytes)
@@ -30,16 +30,8 @@ object HbaseUtil {
       val content = table.get(get).getValue(Bytes.toBytes("basic"), Bytes.toBytes("content"))
       val title = table.get(get).getValue(Bytes.toBytes("basic"), Bytes.toBytes("title"))
       val timeSpider = table.get(get).getValue(Bytes.toBytes("basic"),Bytes.toBytes("time_spider"))
+      val articleType = table.get(get).getValue(Bytes.toBytes("basic"),Bytes.toBytes("article_type"))
 
-      if (time == null) {
-        println("hbase url == null")
-      }
-      if (content == null) {
-        println("hbase content == null")
-      }
-      if (title == null) {
-        println("hbase title == null")
-      }
 
       if (time == null && content == null &&title == null) {
         println(s"Get empty data by this table: $tableName and rowkey: $rowkey")
@@ -49,9 +41,9 @@ object HbaseUtil {
       val encoding = new CharsetDetector().setText(content).detect().getName
 
       if(new String(time, "UTF-8") == ""){
-        (new String(timeSpider, "UTF-8"), new String(content, encoding), new String(title, encoding))
+        (new String(timeSpider, "UTF-8"), new String(content, encoding), new String(title, encoding),new String(articleType,encoding))
       }else{
-        (new String(time, "UTF-8"), new String(content, encoding), new String(title, encoding))
+        (new String(time, "UTF-8"), new String(content, encoding), new String(title, encoding),new String(articleType,encoding))
       }
     } catch {
 

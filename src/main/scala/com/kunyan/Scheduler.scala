@@ -102,6 +102,8 @@ object Scheduler {
       title = title.replaceFirst("\"","“")
       title = title.replaceFirst("\"","”")
 
+      val articleType = result._4
+
       val t1 = System.currentTimeMillis()
       if (!lazyConn.jedisExists(String.format("news:%s", title)) && !lazyConn.existSimilarKey(titleDeduplication,title)) {
         val t2 = System.currentTimeMillis()
@@ -145,12 +147,18 @@ object Scheduler {
 
         val platformId = platform.toInt
 
-        if (platformId > 10000 && platformId < 20000)
-          newsType = 1 //快讯
-        else if (platformId > 60000 && platformId < 70000)
-          newsType = 3 //研报
-        else if (platformId > 50000 && platformId < 60000)
-          newsType = 4 //公告
+
+        articleType match {
+          case "新闻" => newsType = 0
+          case "快讯" => newsType = 1
+          case "达人观点" => newsType = 2
+          case "研报" => newsType = 3
+          case "公告" => newsType = 4
+          case "行情分析" => newsType = 5
+          case "行情图表" => newsType = 6
+          case "公告" => newsType = 7
+          case _ => println("无此新闻类型")
+        }
 
         val jsonId = System.currentTimeMillis() * 100 + SparkEnv.get.executorId.toInt
         val mysqlConn = lazyConn.mysqlNewsConn
