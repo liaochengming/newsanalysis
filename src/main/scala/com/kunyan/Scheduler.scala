@@ -6,9 +6,9 @@ import _root_.kafka.serializer.StringDecoder
 import com.alibaba.fastjson.JSON
 import com.ibm.icu.text.SimpleDateFormat
 import com.kunyan.conf.Platform
-import com.kunyan.nlp.KunLP
-import com.kunyan.nlp.task.NewsProcesser
 import com.kunyan.util.{HbaseUtil, LazyConnections, MysqlUtil}
+import com.nlp.TitleDeduplication
+import com.nlp.util.{EasyParser, NewsProcesser, SegmentHan}
 import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import org.apache.spark.{SparkConf, SparkEnv}
@@ -37,9 +37,14 @@ object Scheduler {
     val lazyConn = LazyConnections(xml)
     val lazyConnBr = sparkContext.broadcast(lazyConn)
 
+    val easyParser = EasyParser.apply()
+    val easyParserBr = sparkContext.broadcast(easyParser)
     // 初始化行业、概念、股票字典
-    val newsProcesser = NewsProcesser(sparkContext, (xml \ "mysqlSen" \ "url").text)
+    val newsProcesser = NewsProcesser()
     val newsProcesserBr = sparkContext.broadcast(newsProcesser)
+
+    val titleDeduplication = new TitleDeduplication()
+    val titleDeduplicationBr = sparkContext.broadcast(titleDeduplication)
 
     val groupId = (xml \ "kafka" \ "groupId").text
     val brokerList = (xml \ "kafka" \ "brokerList").text
@@ -63,7 +68,9 @@ object Scheduler {
           println(s"$date get kafka Topic message: " + message)
           analyzer(message,
             lazyConnBr.value,
-            newsProcesserBr.value)
+            newsProcesserBr.value,
+            easyParserBr.value,
+            titleDeduplicationBr.value)
 
         })
       })
@@ -77,7 +84,7 @@ object Scheduler {
   }
 
 
-  def analyzer(message: String, lazyConn: LazyConnections, newsProcesser: NewsProcesser): Unit = {
+  def analyzer(message: String, lazyConn: LazyConnections, newsProcesser: NewsProcesser,easyParser: EasyParser,titleDeduplication: TitleDeduplication): Unit = {
 
     try{
 
@@ -96,7 +103,7 @@ object Scheduler {
       title = title.replaceFirst("\"","”")
 
       val t1 = System.currentTimeMillis()
-      if (!lazyConn.jedisExists(String.format("news:%s", title)) && !lazyConn.existSimilarKey(title)) {
+      if (!lazyConn.jedisExists(String.format("news:%s", title)) && !lazyConn.existSimilarKey(titleDeduplication,title)) {
         val t2 = System.currentTimeMillis()
         println("遍历redis查询标题耗时: " + (t2-t1))
         var digest = ""
@@ -105,7 +112,7 @@ object Scheduler {
         if (content != "") {
 
           try {
-            tempDigest = KunLP.getSummary(title, content)
+            tempDigest = easyParser.getSummary(title, content)
           } catch {
             case e: Exception =>
               println("提取摘要异常")
@@ -121,18 +128,8 @@ object Scheduler {
         val newDigest = interceptData(digest, 500)
 
         // 情感
-        var sen = 1
+        val sen = 2
 
-        if (content != "") {
-
-          val sentiment = KunLP.getSentiment(title, content)
-
-          if (sentiment == "neg")
-            sen = 0
-
-        } else {
-          sen = -1
-        }
 
         // 行业
         val industry = newsProcesser.getIndustry(content)
@@ -161,7 +158,7 @@ object Scheduler {
         val pst = mysqlConn.prepareStatement("INSERT INTO news_info (n_id, type, platform, title, url, news_time, industry, section, stock, digest,summary, sentiment, updated_time, source)" +
           " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 
-        val ifInsert = MysqlUtil.insert(message, lazyConn, newsProcesser, pst,
+        val ifInsert = MysqlUtil.insert(message, lazyConn, newsProcesser, pst,easyParser,titleDeduplication,
           jsonId, newsType, platform, title,
           url, time, industry, section,
           stock, summary, newDigest, sen,
@@ -169,8 +166,8 @@ object Scheduler {
 
         if(ifInsert){
           //把title消息发到kafka  sentiment_title这个topic
-          val message = KunLP.segment(title, isUseStopWords = false)
-            .map(_.word).mkString(",")
+          val message = SegmentHan.segment(title, isUseStopWords = false)
+            .mkString(",")
           lazyConn.sendTask("sentiment_title",url+"\t"+message)
         }
 

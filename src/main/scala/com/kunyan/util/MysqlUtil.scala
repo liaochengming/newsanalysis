@@ -1,9 +1,10 @@
 package com.kunyan.util
 
-import java.sql.{SQLException, PreparedStatement}
+import java.sql.{PreparedStatement, SQLException}
 
 import com.kunyan.Scheduler
-import com.kunyan.nlp.task.NewsProcesser
+import com.nlp.TitleDeduplication
+import com.nlp.util.{EasyParser, NewsProcesser}
 
 import scala.collection.mutable.ListBuffer
 
@@ -14,7 +15,7 @@ object MysqlUtil {
 
   val messageList = new ListBuffer[String]
 
-  def insert(message:String,lazyConn: LazyConnections, newsProcesser: NewsProcesser, prep:PreparedStatement, params: Any*): Boolean = {
+  def insert(message:String,lazyConn: LazyConnections, newsProcesser: NewsProcesser, prep:PreparedStatement,easyParser: EasyParser,titleDeduplication: TitleDeduplication, params: Any*): Boolean = {
 
     try {
 
@@ -43,7 +44,7 @@ object MysqlUtil {
       println("Insertion finish")
 
       for(mess <- messageList){
-        Scheduler.analyzer(mess,lazyConn,newsProcesser)
+        Scheduler.analyzer(mess,lazyConn,newsProcesser,easyParser,titleDeduplication)
         messageList.remove(messageList.indexOf(mess))
       }
 

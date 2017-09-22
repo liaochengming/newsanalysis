@@ -4,11 +4,9 @@ version := "1.0"
 
 scalaVersion := "2.10.4"
 
-resolvers += "Releases" at "http://122.225.110.113:9023/nexus/content/repositories/releases/"
+libraryDependencies += "org.apache.spark" % "spark-streaming_2.10" % "1.5.2" % "provided"
 
-libraryDependencies += "com.kunyan" % "kunlp" % "1.0.2"
-
-libraryDependencies += "com.kunyan" % "nlpsuit-package" % "0.2.9.0"
+libraryDependencies += "org.apache.spark" % "spark-mllib_2.10" % "1.5.2" % "provided"
 
 libraryDependencies += "org.apache.spark" % "spark-streaming-kafka_2.10" % "1.5.2" exclude("org.apache.spark", "spark-streaming_2.10")
 
@@ -22,9 +20,9 @@ libraryDependencies += "org.json" % "json" % "20090211"
 
 libraryDependencies += "com.ibm.icu" % "icu4j" % "56.1"
 
-libraryDependencies += "com.alibaba" % "fastjson" % "1.2.31"
-
 libraryDependencies += "redis.clients" % "jedis" % "2.8.0"
+
+unmanagedJars in Compile += file("D:/jar/LabelMapping-assembly-1.0(10).jar")
 
 assemblyMergeStrategy in assembly := {
   case PathList("javax", "servlet", xs@_*) => MergeStrategy.last

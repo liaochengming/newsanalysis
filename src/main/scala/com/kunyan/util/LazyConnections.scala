@@ -1,15 +1,15 @@
 package com.kunyan.util
 
 import java.sql.{Connection, DriverManager}
+import java.util
 import java.util.Properties
 
-import com.kunyandata.nlpsuit.deduplication.TitleDeduplication
+import com.nlp.TitleDeduplication
 import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import redis.clients.jedis.{Jedis, JedisPool, JedisPoolConfig}
 
 import scala.xml.Elem
-import java.util
 
 
 class LazyConnections(createHbaseConnection: () => org.apache.hadoop.hbase.client.Connection,
@@ -70,14 +70,14 @@ class LazyConnections(createHbaseConnection: () => org.apache.hadoop.hbase.clien
     jedis.keys(keys)
   }
 
-  def existSimilarKey(title: String): Boolean = {
+  def existSimilarKey(titleDeduplication: TitleDeduplication,title: String): Boolean = {
 
     val keys = jedisGetKeysLike("news:*")
     val iterator = keys.iterator()
 
     while (iterator.hasNext) {
       val item = iterator.next()
-      if (TitleDeduplication.process(title, item, 2, 0.6))
+      if (titleDeduplication.process(title, item, 2, 0.6))
         return true
     }
 
